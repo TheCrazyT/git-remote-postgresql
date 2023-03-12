@@ -8,4 +8,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: "run test"
-      run: cd ${GITHUB_WORKSPACE} && bash ./run_test.sh
+      run: cd ${GITHUB_WORKSPACE} && pwd && ls && bash ./run_test.sh
