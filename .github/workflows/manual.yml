@@ -8,4 +8,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: "run test"
-      run: ./run_test.sh
+      run: ./.github/workflows/run_test.sh
