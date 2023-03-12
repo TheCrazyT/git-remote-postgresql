@@ -4,22 +4,80 @@ import pexpect
 import re
 import time
 import os
+from configparser import ConfigParser
 from datetime import datetime
 
 DEBUG = ("1" == os.getenv("GR_PSQL_DEBUG"))
 
-def print_fl(*args,**kwargs):
+def print_fl(*args, **kwargs):
   print(*args, **kwargs, flush=True)
+
+def print_to_err(*args, **kwargs):
+    print_fl(*args, **kwargs, file=sys.stderr)
 
 def dbgw(s):
   global DEBUG
   if DEBUG:
-    print_fl(s, file=sys.stderr, end='')
+    print_to_err(s, end='')
 
 def dbg(s):
   global DEBUG
   if DEBUG:
-    print_fl(s, file=sys.stderr)
+    print_to_err(s)
+
+def read_from_tty():
+  with open("/dev/tty") as tty:
+    res = tty.readline()
+    dbg(f"tty: {res}")
+    return res
+
+def git_credential_fill(protocol, host):
+  child = pexpect.spawn("git credential fill")
+  child.sendline(f"protocol={protocol}")
+  child.readline()
+  child.sendline(f"host={host}")
+  child.readline()
+  child.sendline("")
+  child.readline()
+  prop = None
+  try:
+    child.expect("Username for .*")
+    print_to_err("Username:")
+    child.sendline(read_from_tty())
+    child.readline()
+    child.expect("Password for .*")
+    print_to_err("Password:")
+    child.sendline(read_from_tty())
+    child.readline()
+  except Exception as e:
+    dbg(f"expected 'Username for' {e}")
+    prop = child.before.decode()
+  if prop is None:
+    child.wait()
+    prop = child.read().decode()
+  dbg(f"prop: -->{prop}<--")
+  config = ConfigParser()
+  config.read_string('[config]\n' + prop)
+  dbg(f"config: {config}")
+  return config
+
+def git_credential_approve(protocol, host, username, password):
+  child = pexpect.spawn("git credential approve")
+  child.sendline(f"protocol={protocol}")
+  child.sendline(f"host={host}")
+  child.sendline(f"username={username}")
+  child.sendline(f"password={password}")
+  child.sendline("")
+  child.wait()
+
+def git_credential_reject(protocol, host, username, password):
+  child = pexpect.spawn("git credential reject")
+  child.sendline(f"protocol={protocol}")
+  child.sendline(f"host={host}")
+  child.sendline(f"username={username}")
+  child.sendline(f"password={password}")
+  child.sendline("")
+  child.wait()
 
 def cmd_list():
   dbg("in func: cmd_list")
@@ -57,23 +115,27 @@ def print_file_list(file_list):
     print(f"M 100644 :{fl['id']} {fl['name']}")
   print_fl("")
 
-def cmd_import_MAIN():
-  global db, host, user, password
+def cmd_import_MAIN(protocol, host, db, port, username, password):
   dbg("in func: cmd_import")
   l = sys.stdin.readline()
   while l.startswith("import"):
     dbg("  %s" % l)
     l = sys.stdin.readline()
-  cmd = " ".join(['pg_dump', '--schema-only', '-d', db, '-U', user , '-W', '-h', host])
+  cmd = " ".join(['pg_dump', '--schema-only', '-d', db, '-U', username , '-W', '-h', host])
   print_fl("reset refs/heads/main")
   dbg(f"cmd: {cmd}")
-  child = pexpect.spawn(cmd)
-  dbg("get stdout,stderr,stdin")
-  child.expect('(?i)password.*')
-  dbg("after exp password")
-  child.sendline(password)
-  child.expect(pexpect.EOF)
-  content = child.before.decode()
+  try:
+    child = pexpect.spawn(cmd)
+    dbg("get stdout,stderr,stdin")
+    child.expect('(?i)password.*')
+    dbg("after exp password")
+    child.sendline(password)
+    child.expect(pexpect.EOF)
+    content = child.before.decode()
+  except:
+    git_credential_reject(protocol, host, username, password)
+    raise
+  git_credential_approve(protocol, host, username, password)
   line_output = False
   obj_name = None
   obj_type = None
@@ -116,19 +178,27 @@ dbg(sys.argv)
 if(sys.argv):
   if(len(sys.argv)==3):
     url = sys.argv[2]
+    protocol = "postgresql"
     dbg(url)
     host_and_path = url[url.index('://')+3:]
     dbg(f"host_and_path: {host_and_path}")
     host_and_port = host_and_path[:host_and_path.index('/')]
     dbg(f"host_and_port: {host_and_port}")
-    host = host_and_port[:host_and_port.index(":")]
-    port = host_and_port[len(host)+1:]
+    port = 5432
+    try:
+      port_pos = host_and_port.index(":")
+      host = host_and_port[:port_pos]
+      port = host_and_port[len(host)+1:]
+    except ValueError:
+      host = host_and_port
     dbg(f"host: {host}")
     dbg(f"port: {port}")
     db = host_and_path[len(host_and_port)+1:]
     dbg(f"db: {db}")
-    user = "itsme"
-    password = "itsme"
+    config = git_credential_fill(protocol, host)
+    dbg(f"config: {config}")
+    username = config["config"]["username"]
+    password = config["config"]["password"]
 
     while True:
       cmd = sys.stdin.readline()
@@ -140,4 +210,4 @@ if(sys.argv):
         elif(cmd == "list"):
           cmd_list()
         elif(cmd == "import refs/heads/main"):
-          cmd_import_MAIN()
+          cmd_import_MAIN(protocol, host, db, port, username, password)
