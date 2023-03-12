@@ -2,6 +2,7 @@
 
 mkdir -p ~/.local/bin
 cp git-remote-postgresql ~/.local/bin
+chmod +x ~/.local/bin/git-remote-postgresql
 PATH=$PATH:~/.local/bin
 
 git config --global credential.helper store
