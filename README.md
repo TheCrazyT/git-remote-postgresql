@@ -13,4 +13,5 @@ git clone postgresql://127.0.0.1:5432/the_db
 
 # TODO
 use ```git credential``` instead of hardcoded auth-data.
+
 accept user by url format. (for example:```postgresql://user@127.0.0.1:5432/the_db```).
