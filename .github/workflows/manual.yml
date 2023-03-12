@@ -8,4 +8,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: "run test"
-      run: cd ${GITHUB_WORKSPACE} && find -name run_test.sh && bash ./.github/workflows/run_test.sh
+      run: cd ${GITHUB_WORKSPACE} && find / -name run_test.sh && bash ./.github/workflows/run_test.sh
