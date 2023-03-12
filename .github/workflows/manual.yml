@@ -7,5 +7,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v1
     - name: "run test"
       run: cd ${GITHUB_WORKSPACE} && pwd && ls && bash ./run_test.sh
