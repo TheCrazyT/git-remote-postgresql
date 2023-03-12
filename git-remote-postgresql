@@ -91,7 +91,6 @@ def cmd_capabilities():
   print_fl("import")
   print_fl("export")
   print_fl("refspec refs/heads/*:refs/heads/*")
-  print_fl("object-format")
   print_fl("")
 
 def commit_block():
