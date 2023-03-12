@@ -7,11 +7,11 @@ PATH=$PATH:~/.local/bin
 
 git config --global credential.helper store
 
-echo -e "protocol=postgresql\nhost=localhost\nusername=user\npassword=password"|git credential approve
+echo -e "protocol=postgresql\nhost=127.0.0.1\nusername=user\npassword=password"|git credential approve
 sudo apt update
 sudo apt install -y postgresql python3
 pip install pexpect
-/etc/init.d/postgresql start
+sudo /etc/init.d/postgresql start
 
 sudo -u postgres -i psql -c "CREATE DATABASE the_db"
 sudo -u postgres -i psql -d the_db -c "CREATE TABLE test (x INTEGER)"
