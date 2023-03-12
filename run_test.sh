@@ -1,7 +1,7 @@
 #!/bin/bash
 
 mkdir -p ~/.local/bin
-cp git-remote-postgresql.py ~/.local/bin
+cp git-remote-postgresql ~/.local/bin
 PATH=$PATH:~/.local/bin
 
 git config --global credential.helper store
