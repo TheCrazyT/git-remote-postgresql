@@ -13,6 +13,7 @@ git clone postgresql://127.0.0.1:5432/the_db
 
 # TODO
 
+* detect deletions
 * no pushing possible yet
   (not really shure if it would be a good idea to be able to)
 * author of code changes cannot be detected
